@@ -1,61 +1,68 @@
-var ircLib = require('irc');
-var http = require('http');
-var url = require('url');
+console.log('Starting bot...');
 
+var ircLib = require('irc'),
+    http = require('http'),
+    url = require('url'),
 
-var config = {
-	ircServer: 'irc.mibbit.net',
-	ircChannel: '#testParrot',
-	botName: 'parrot'
-};
+    config = {
+      server: 'irc.perl.org',
+      channel: '#testparrot',
+      name: 'parrot'
+    },
 
-var client = new ircLib.Client(config.ircServer, config.botName, {
-        channels: [config.ircChannel],
-});
+    client = new ircLib.Client(config.server, config.name, {
+      channels: [config.channel]
+    }),
 
+    reName = new RegExp('^' + config.name, 'i'),
+    reUrl = /((?:http|https):\/\/[a-z0-9\/\?=_#&%~-]+(\.[a-z0-9\/\?=_#&%~-]+)+)|(www(\.[a-z0-9\/\?=_#&%~-]+){2,})/gi,
+    reTwitterId = /\/(\d+)$/;
 
+console.log('server: ' + config.server);
+console.log('channel: ' + config.channel);
+console.log('botname: ' + config.name);
 
-client.addListener('message', function (from, to, message) {
-	console.log("from: " + from);
-	console.log("to: " + to);
-	console.log("message: " + message);
-	
-	if (message.substring(0, config.botName.length) == config.botName)
-	{
-		//assuming we're addressed "parrot: <link>
-		//oh dear, I think this needs some regex.
-		var twitterLink = message.substring(config.botName.length + 2, message.length);
+client.addListener('message', function(from, to, message) {
+  console.log(from + ' => ' + to + ': ' + message);
 
-		var twitterURL = new url.parse(twitterLink);
-		
-		var id = twitterURL.path.substring(twitterURL.path.lastIndexOf('/'), twitterURL.path.length);
-	
-		//now get from twitter
-		var apiLink = 'http://api.twitter.com/1/statuses/show/' + id + '.json';
+  if (reName.test(message)) {
 
-		var options = {
-			host:  'api.twitter.com',
-			port: twitterURL.port,
-			path: '/1/statuses/show/' + id + '.json' 
-		};
+    var link = reUrl.exec(message);
 
-		var request = http.get(options, function(res) {
-			var data = '';
-			
-			res.on('data', function(chunk) {
-				data += chunk;
-			});
+    if (link) {
 
-			res.on('end', function() {
-				var tweet = JSON.parse(data);
-				//console.log(tweet);
-				client.say(config.ircChannel, 'Tweet from: ' + tweet.user.screen_name);
-				client.say(config.ircChannel, tweet.text);
-			});
+      //set link to the matched string 
+      link = link[1];
 
-		});
-		
-	}
+      var twitterUrl = new url.parse(link),
+          id = reTwitterId.exec(link);
+
+      id = id[1];
+
+      var options = {
+        host: 'api.twitter.com',
+        port: twitterUrl.port,
+        path: '/1/statuses/show/' + id + '.json'
+      };
+
+      var request = http.get(options, function(res) {
+        var data = '';
+
+        res.on('data', function(chunk) {
+          data += chunk;
+        });
+
+        res.on('end', function() {
+          var tweet = JSON.parse(data);
+          //console.log(tweet);
+          client.say(config.channel, 'Tweet from: ' + tweet.user.screen_name);
+          client.say(config.channel, tweet.text);
+        });
+
+      });
+      
+    }
+  }
 
 });
 
@@ -64,3 +71,4 @@ process.on('uncaughtException', function(err) {
   console.log(err);
 });
 
+client.join(config.ircChannel);
