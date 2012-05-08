@@ -33,16 +33,15 @@ client.addListener('message', function(from, to, message) {
     console.log('got a link');
 
       //set link to the matched string 
-console.log(link);
       link = link[1];
+      console.log('got link ' + link);
 
       var twitterUrl = new url.parse(link),
           id = reTwitterId.exec(link);
 
-console.log(id);
       if (id && id.length) {
-        console.log('got an id');
         id = id[1];
+        console.log('got id ' + id);
 
         var options = {
           host: 'api.twitter.com',
