@@ -5,8 +5,8 @@ var ircLib = require('irc'),
     url = require('url'),
 
     config = {
-      server: 'irc.perl.org',
-      channel: '#cabal',
+      server: 'irc.mibbit.net',
+      channel: '#testparrotbot',
       name: 'twitterbot'
     },
 
